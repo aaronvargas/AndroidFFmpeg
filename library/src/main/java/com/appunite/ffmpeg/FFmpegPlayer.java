@@ -18,8 +18,6 @@
 
 package com.appunite.ffmpeg;
 
-import java.util.Map;
-
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.media.AudioFormat;
@@ -27,6 +25,8 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.AsyncTask;
 import android.view.Surface;
+
+import java.util.Map;
 
 public class FFmpegPlayer {
 	private static class StopTask extends AsyncTask<Void, Void, Void> {
@@ -196,7 +196,7 @@ public class FFmpegPlayer {
 	private FFmpegListener mpegListener = null;
 	private final RenderedFrame mRenderedFrame = new RenderedFrame();
 
-	private int mNativePlayer;
+	private long mNativePlayer;
 	private final Activity activity;
 
 	private Runnable updateTimeRunnable = new Runnable() {

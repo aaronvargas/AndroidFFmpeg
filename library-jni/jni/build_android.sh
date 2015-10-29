@@ -17,6 +17,10 @@
 
 set -x
 
+if [ -n "$$ANDROID_NDK" ]; then
+    ANDROID_NDK_HOME=$ANDROID_NDK
+fi
+
 if [ "$ANDROID_NDK_HOME" = "" ]; then
 	echo ANDROID_NDK_HOME variable not set, exiting
 	echo "Use: export ANDROID_NDK_HOME=/your/path/to/android-ndk"
@@ -49,10 +53,12 @@ echo "Using compilator version: $COMPILATOR_VERSION"
 OS_ARCH=`basename $ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-$COMPILATOR_VERSION/prebuilt/*`
 echo "Using architecture: $OS_ARCH"
 
-
 function setup_paths
 {
-	export PLATFORM=$ANDROID_NDK_HOME/platforms/$PLATFORM_VERSION/arch-$ARCH/
+    if [ "$PLATFORM" = "" ]; then
+	    export PLATFORM=$ANDROID_NDK_HOME/platforms/$PLATFORM_VERSION/arch-$ARCH/
+    fi
+
 	if [ ! -d $PLATFORM ]; then
 		echo $PLATFORM does not exist
 		exit 1
@@ -65,8 +71,8 @@ function setup_paths
 	export CFLAGS="$CFLAGS"
 	export CXXFLAGS="$CFLAGS"
 	export CXX="${CROSS_COMPILE}g++ --sysroot=$PLATFORM"
-	export AS="${CROSS_COMPILE}gcc --sysroot=$PLATFORM"
-	export CC="${CROSS_COMPILE}gcc --sysroot=$PLATFORM"
+	export AS="${CROSS_COMPILE}gcc${CC_EXTENSION} --sysroot=$PLATFORM"
+	export CC="${CROSS_COMPILE}gcc${CC_EXTENSION} --sysroot=$PLATFORM"
 	export PKG_CONFIG="${CROSS_COMPILE}pkg-config"
 	export LD="${CROSS_COMPILE}ld"
 	export NM="${CROSS_COMPILE}nm"
@@ -111,6 +117,22 @@ function build_x264
 	make clean
 	cd ..
 	echo "FINISHED x264 for $ARCH"
+}
+
+function build_toolchain
+{
+    echo "building toolchain"
+
+    TOOLCHAIN_NAME=${EABIARCH}-${GCC_64_VER}
+    TOOLCHAIN_PATH=$PREFIX/toolchain
+    MAKE_TOOLCHAIN_FLAGS="--install-dir=$TOOLCHAIN_PATH  --system=${OS_ARCH}"
+
+    $ANDROID_NDK/build/tools/make-standalone-toolchain.sh \
+        $MAKE_TOOLCHAIN_FLAGS \
+        --platform=$PLATFORM_VERSION \
+        --toolchain=$TOOLCHAIN_NAME
+
+    PREBUILT=$TOOLCHAIN_PATH
 }
 
 function build_amr
@@ -422,5 +444,28 @@ build_ass
 build_ffmpeg
 build_one
 
+#arm arm64
+EABIARCH=aarch64-linux-android
+ARCH=aarch64
+OPTIMIZE_CFLAGS=""
+PREFIX=$(pwd)/ffmpeg-build/arm64-v8a
+OUT_LIBRARY=$PREFIX/libffmpeg.so
+ADDITIONAL_CONFIGURE_FLAG=
+SONAME=libffmpeg.so
+PLATFORM_VERSION=android-21
+CC_EXTENSION="-4.9"
+GCC_64_VER=4.9
+
+build_toolchain
+export PLATFORM=$TOOLCHAIN_PATH/sysroot
+
+setup_paths
+build_amr
+build_aac
+build_fribidi
+build_freetype2
+build_ass
+build_ffmpeg
+build_one
 
 echo "BUILD SUCCESS"

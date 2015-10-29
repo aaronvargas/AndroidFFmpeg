@@ -57,7 +57,7 @@
 #include "sync.h"
 
 #define FFMPEG_LOG_LEVEL AV_LOG_WARNING
-#define LOG_LEVEL 2
+#define LOG_LEVEL 100
 #define LOG_TAG "player.c"
 #define LOG(...) {__android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__);}
 #define LOGI(level, ...) if (level <= LOG_LEVEL) {__android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__);}
@@ -770,8 +770,12 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 			sleep_time = 500000ll;
 		}
 
-		int timeout_ret = pthread_cond_timeout_np(&player->cond_queue,
-				&player->mutex_queue, sleep_time/1000ll);
+        struct timespec timeoutTime;
+        timeoutTime.tv_sec = sleep_time/1000ll;
+
+        int timeout_ret = pthread_cond_timedwait(&player->cond_queue,
+                                                  &player->mutex_queue, &timeoutTime);
+
 		if (timeout_ret == ETIMEDOUT) {
 			// nothing special probably it is time ready to display
 			// but for sure check everything again
@@ -1512,8 +1516,8 @@ struct Player * player_get_player_field(JNIEnv *env, jobject thiz) {
 
 	jfieldID m_native_layer_field = java_get_field(env, player_class_path_name,
 			player_m_native_player);
-	struct Player * player = (struct Player *) (*env)->GetIntField(env, thiz,
-			m_native_layer_field);
+	struct Player * player = (struct Player *) (*env)->GetLongField(env, thiz, m_native_layer_field);
+
 	return player;
 }
 
@@ -2755,8 +2759,7 @@ int jni_player_init(JNIEnv *env, jobject thiz) {
 			goto free_player;
 		}
 
-		(*env)->SetIntField(env, thiz, player_m_native_player_field,
-				(jint) player);
+        (*env)->SetLongField(env, thiz, player_m_native_player_field, (jlong) player);
 
 		player->player_prepare_frame_method = java_get_method(env, player_class,
 				player_prepare_frame);
