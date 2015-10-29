@@ -1,9 +1,5 @@
 package com.ffmpegtest;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -19,6 +15,10 @@ import android.widget.ListView;
 
 import com.ffmpegtest.adapter.ItemsAdapter;
 import com.ffmpegtest.adapter.VideoItem;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends Activity implements OnItemClickListener {
 
@@ -65,7 +65,8 @@ public class MainActivity extends Activity implements OnItemClickListener {
 		items.add(new VideoItem(
 				items.size(),
 				"\"localfile.mp4\" on sdcard",
-				getSDCardFile("localfile.mp4"),
+//                getSDCardFile("localfile.mp4"),
+                getSDCardFile("glass_tap.mp4"),
 				null));
 		items.add(new VideoItem(
 				items.size(),
@@ -80,7 +81,9 @@ public class MainActivity extends Activity implements OnItemClickListener {
 		items.add(new VideoItem(
 				items.size(),
 				"IP camera",
-				"rtsp://ip.appunite-local.net:554",
+//                "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov",
+                "rtsp://streaming1.osu.edu/media2/ufsap/ufsap.mov",
+//				"rtsp://ip.appunite-local.net:554",
 				null));
 		return items;
 	}
