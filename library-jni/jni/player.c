@@ -80,10 +80,11 @@
 
 #define AUDIO_TIME_ADJUST_US -200000ll
 
-//#define MEASURE_TIME
+#define MEASURE_TIME
 
 #ifdef MEASURE_TIME
 struct timespec render_frame_start, render_frame_stop;
+double corrected = 0.5;
 
 // http://www.guyrutenberg.com/2007/09/22/profiling-code-using-clock_gettime/
 struct timespec timespec_diff(struct timespec start, struct timespec end) {
@@ -740,7 +741,8 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 				stream_time/1000000.0,
 				current_video_time/1000000.0);
 
-		int64_t sleep_time = stream_time - current_video_time;
+//        int64_t sleep_time = stream_time - current_video_time;
+        int64_t sleep_time = stream_time - (current_video_time + current_video_time * corrected);
 
 		LOGI(8,
 				"player_wait_for_frame[%d] Waiting for frame: sleeping: %" SCNd64,
@@ -757,6 +759,9 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 
 			player->start_time = new_value;
 			pthread_cond_broadcast(&player->cond_queue);
+            if (corrected > 0.2) {
+                corrected = corrected - 0.1;
+            }
 		}
 
 		if (sleep_time <= MIN_SLEEP_TIME_US) {
@@ -771,10 +776,13 @@ enum WaitFuncRet player_wait_for_frame(struct Player *player, int64_t stream_tim
 		}
 
         struct timespec timeoutTime;
-        timeoutTime.tv_sec = sleep_time/1000ll;
+        timeoutTime.tv_nsec = sleep_time;
 
+        LOGI(3, "player_wait_for_frame[%d] starting sleep...", stream_no);
         int timeout_ret = pthread_cond_timedwait(&player->cond_queue,
                                                   &player->mutex_queue, &timeoutTime);
+
+        LOGI(3, "player_wait_for_frame[%d] finished sleep", stream_no);
 
 		if (timeout_ret == ETIMEDOUT) {
 			// nothing special probably it is time ready to display
